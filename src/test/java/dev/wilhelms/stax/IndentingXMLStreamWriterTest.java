@@ -32,6 +32,20 @@ class IndentingXMLStreamWriterTest {
     @Test void writeEmptyElementIsIndentedAndSelfClosing() throws Exception {
         assertEquals("<root>\n  <empty/>\n</root>", write(w -> { w.writeStartElement("root"); w.writeEmptyElement("empty"); w.writeEndElement(); }));
     }
+    @Test void flushCompletesTopLevelEmptyElementForWoodstox() throws Exception {
+        StringWriter output = new StringWriter(); WstxOutputFactory factory = new WstxOutputFactory();
+        factory.setProperty(XMLOutputFactory2.P_AUTOMATIC_EMPTY_ELEMENTS, true);
+        IndentingXMLStreamWriter writer = new IndentingXMLStreamWriter(factory.createXMLStreamWriter(output));
+        writer.writeEmptyElement("empty"); writer.flush();
+        assertEquals("<empty/>", output.toString());
+    }
+    @Test void writeEmptyElementStaysSelfClosingEvenWithoutAutomaticEmptyElements() throws Exception {
+        StringWriter output = new StringWriter(); WstxOutputFactory factory = new WstxOutputFactory();
+        factory.setProperty(XMLOutputFactory2.P_AUTOMATIC_EMPTY_ELEMENTS, false);
+        IndentingXMLStreamWriter writer = new IndentingXMLStreamWriter(factory.createXMLStreamWriter(output));
+        writer.writeStartElement("root"); writer.writeEmptyElement("empty"); writer.writeStartElement("sibling"); writer.writeEndElement(); writer.writeEndElement(); writer.close();
+        assertEquals("<root>\n  <empty/>\n  <sibling></sibling>\n</root>", output.toString());
+    }
     @Test void preservesTextAndCdata() throws Exception {
         assertEquals("<root>\n  <foo>bar</foo>\n  <c><![CDATA[x<y]]></c>\n</root>", write(w -> { w.writeStartElement("root"); w.writeStartElement("foo"); w.writeCharacters("bar"); w.writeEndElement(); w.writeStartElement("c"); w.writeCData("x<y"); w.writeEndElement(); w.writeEndElement(); }));
     }

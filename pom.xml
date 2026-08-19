@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.wilhelms</groupId>
   <artifactId>indenting-xml-stream-writer</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <name>Indenting XMLStreamWriter</name>
   <description>A small XMLStreamWriter decorator with safe element indentation.</description>
   <url>https://github.com/jpwilhelms/indenting-xml-stream-writer</url>

@@ -176,7 +176,13 @@ public final class IndentingXMLStreamWriter implements XMLStreamWriter {
         Element(Action start, boolean empty) { this.start = start; this.empty = empty; }
         @Override public void write(XMLStreamWriter writer, int depth, boolean withinMixedContent) throws XMLStreamException {
             start.write(writer); for (Action action : startTagActions) action.write(writer);
-            if (empty) return;
+            if (empty) {
+                // A delegate may defer closing an empty element's start tag until its next write
+                // call, so a bare flush() right after writeEmptyElement() can leave it unclosed.
+                // This forces closure without abandoning the delegate's own self-closing guarantee.
+                writer.writeCharacters("");
+                return;
+            }
             boolean mixed = withinMixedContent || content.stream().anyMatch(Node::isText);
             if (mixed) { for (Node node : content) node.write(writer, depth + 1, true); }
             else if (!content.isEmpty()) {
