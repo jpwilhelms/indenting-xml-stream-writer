@@ -1,6 +1,7 @@
 package dev.wilhelms.stax;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.ctc.wstx.stax.WstxOutputFactory;
@@ -45,6 +46,18 @@ class IndentingXMLStreamWriterTest {
         IndentingXMLStreamWriter writer = new IndentingXMLStreamWriter(factory.createXMLStreamWriter(output));
         writer.writeStartElement("root"); writer.writeEmptyElement("empty"); writer.writeStartElement("sibling"); writer.writeEndElement(); writer.writeEndElement(); writer.close();
         assertEquals("<root>\n  <empty/>\n  <sibling></sibling>\n</root>", output.toString());
+    }
+    @Test void writeAttributeAfterAFlushedTopLevelEmptyElementThrows() throws Exception {
+        StringWriter output = new StringWriter();
+        IndentingXMLStreamWriter writer = new IndentingXMLStreamWriter(XMLOutputFactory.newFactory().createXMLStreamWriter(output));
+        writer.writeEmptyElement("x"); writer.flush();
+        assertThrows(XMLStreamException.class, () -> writer.writeAttribute("a", "b"));
+    }
+    @Test void writeAttributeAfterAFlushedBufferedEmptyChildStillApplies() throws Exception {
+        StringWriter output = new StringWriter();
+        IndentingXMLStreamWriter writer = new IndentingXMLStreamWriter(XMLOutputFactory.newFactory().createXMLStreamWriter(output));
+        writer.writeStartElement("root"); writer.writeEmptyElement("x"); writer.flush(); writer.writeAttribute("id", "1"); writer.writeEndElement(); writer.flush();
+        assertEquals("<root>\n  <x id=\"1\"/>\n</root>", output.toString());
     }
     @Test void preservesTextAndCdata() throws Exception {
         assertEquals("<root>\n  <foo>bar</foo>\n  <c><![CDATA[x<y]]></c>\n</root>", write(w -> { w.writeStartElement("root"); w.writeStartElement("foo"); w.writeCharacters("bar"); w.writeEndElement(); w.writeStartElement("c"); w.writeCData("x<y"); w.writeEndElement(); w.writeEndElement(); }));
@@ -96,6 +109,9 @@ class IndentingXMLStreamWriterTest {
     }
     @Test void startAndEndDocumentAreDelegatedWithoutExtraLine() throws Exception {
         assertEquals("<?xml version='1.0' encoding='UTF-8'?>\n<root/>", write(w -> { w.writeStartDocument("UTF-8", "1.0"); w.writeStartElement("root"); w.writeEndElement(); w.writeEndDocument(); }));
+    }
+    @Test void endDocumentClosesOpenElements() throws Exception {
+        assertEquals("<root>\n  <child/>\n</root>", write(w -> { w.writeStartElement("root"); w.writeStartElement("child"); w.writeEndDocument(); }));
     }
     @Test void entityContentDisablesFormattingInItsParent() throws Exception {
         assertEquals("<r><b/>&amp;</r>", write(w -> { w.writeStartElement("r"); w.writeStartElement("b"); w.writeEndElement(); w.writeEntityRef("amp"); w.writeEndElement(); }));

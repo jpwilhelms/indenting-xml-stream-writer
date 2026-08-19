@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2
+
+- Close buffered open elements when writing or closing a document.
+- Fixed `writeAttribute()`/`writeNamespace()`/`writeDefaultNamespace()` silently discarding their call instead of throwing when invoked after a top-level `writeEmptyElement()` had already been flushed to the delegate (e.g. via `flush()`, `close()`, or `writeEndDocument()`).
+
 ## 1.0.1
 
 - Fixed `writeEmptyElement()` at the top level not closing when followed only by `flush()` (no further write call), which could leave the tag unclosed on delegates that defer closing an empty element's start tag. The fix keeps using the delegate's `writeEmptyElement()`, so its self-closing guarantee is preserved even on delegates not configured to auto-collapse adjacent start/end tags.

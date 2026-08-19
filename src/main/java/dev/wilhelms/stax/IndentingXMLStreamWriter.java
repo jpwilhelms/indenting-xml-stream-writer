@@ -81,13 +81,11 @@ public final class IndentingXMLStreamWriter implements XMLStreamWriter {
         addToCurrent(element);
     }
     @Override public void writeEndDocument() throws XMLStreamException {
-        if (!openElements.isEmpty()) {
-            throw new XMLStreamException("writeEndDocument with unclosed elements");
-        }
+        closeOpenElements();
         emitCompletedTopLevel();
         delegate.writeEndDocument();
     }
-    @Override public void close() throws XMLStreamException { emitCompletedTopLevel(); delegate.close(); }
+    @Override public void close() throws XMLStreamException { closeOpenElements(); emitCompletedTopLevel(); delegate.close(); }
     @Override public void flush() throws XMLStreamException { emitCompletedTopLevel(); delegate.flush(); }
     @Override public void writeAttribute(String localName, String value) throws XMLStreamException {
         attribute(writer -> writer.writeAttribute(localName, value));
@@ -144,12 +142,18 @@ public final class IndentingXMLStreamWriter implements XMLStreamWriter {
         documentStarted = true;
         topLevelContentWritten = false;
     }
+    private void closeOpenElements() throws XMLStreamException {
+        while (!openElements.isEmpty()) {
+            writeEndElement();
+        }
+    }
     private void clearPendingStart() { pendingStart = null; }
     private void addToCurrent(Node node) { if (openElements.isEmpty()) completedTopLevel.add(node); else openElements.peek().content.add(node); }
     private void emitCompletedTopLevel() throws XMLStreamException {
         for (Node node : completedTopLevel) {
             beforeTopLevelContent();
             node.write(delegate, 0, false);
+            if (node == pendingStart) clearPendingStart();
         }
         completedTopLevel.clear();
     }
